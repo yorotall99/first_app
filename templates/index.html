@@ -2,47 +2,39 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Data Cleaner</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>API Data Processing</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-
     <div class="background-mesh"></div>
-    
     <div class="container">
-        <div class="card glass-effect">
+        <div class="card">
             <header>
-                <i class="fa-solid fa-microchip icon-glow"></i>
-                <h2>Nexus Data<span class="highlight">Core</span></h2>
-                <p>Système de Normalisation des Données</p>
+                <div class="icon-glow">⚡</div>
+                <h2>API <span class="highlight">Data</span> Cleaner</h2>
+                <p>Normalisation & IA Processing</p>
             </header>
 
             <form id="uploadForm">
                 <div class="upload-area" id="dropZone">
-                    <input type="file" name="file" id="fileInput" hidden required>
-                    <div class="icon-upload">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                    </div>
-                    <p class="file-msg">Glissez votre fichier ici ou <span class="browse-btn">Parcourir</span></p>
-                    <p class="file-name" id="fileName"></p>
+                    <div class="icon-upload">📁</div>
+                    <p>Glissez votre fichier ici ou <span class="browse-btn">parcourez</span></p>
+                    <input type="file" id="fileInput" name="file" hidden required>
+                    <div id="fileName" class="file-name"></div>
                 </div>
 
                 <button type="submit" id="submitBtn">
                     <span class="btn-text">Initialiser le Nettoyage</span>
-                    <span class="btn-glitch"></span>
                 </button>
             </form>
-            
+
             <div class="status-bar">
                 <div class="status-dot"></div>
-                <span id="statusText">Système prêt</span>
+                <span id="statusText">Système prêt...</span>
             </div>
         </div>
     </div>
-
     <script src="/static/js/script.js"></script>
 </body>
 </html>

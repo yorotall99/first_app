@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dropZone.addEventListener("drop", (e) => {
         e.preventDefault();
         dropZone.classList.remove("active");
-        
+
         if (e.dataTransfer.files.length) {
             fileInput.files = e.dataTransfer.files;
             updateFileInfo(e.dataTransfer.files[0].name);
@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.body.appendChild(a);
             a.click();
             a.remove();
-            
+
             // Succès
             setLoading(false);
             statusText.textContent = "Nettoyage terminé. Téléchargement lancé.";
