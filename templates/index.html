@@ -2,16 +2,45 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>API Data Processing</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Data Cleaner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+
+    <div class="background-mesh"></div>
+    
     <div class="container">
-        <h2>Nettoyage et Normalisation des Données</h2>
-        <form id="uploadForm">
-            <input type="file" name="file" required>
-            <button type="submit">Nettoyer les données</button>
-        </form>
+        <div class="card glass-effect">
+            <header>
+                <i class="fa-solid fa-microchip icon-glow"></i>
+                <h2>Nexus Data<span class="highlight">Core</span></h2>
+                <p>Système de Normalisation des Données</p>
+            </header>
+
+            <form id="uploadForm">
+                <div class="upload-area" id="dropZone">
+                    <input type="file" name="file" id="fileInput" hidden required>
+                    <div class="icon-upload">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <p class="file-msg">Glissez votre fichier ici ou <span class="browse-btn">Parcourir</span></p>
+                    <p class="file-name" id="fileName"></p>
+                </div>
+
+                <button type="submit" id="submitBtn">
+                    <span class="btn-text">Initialiser le Nettoyage</span>
+                    <span class="btn-glitch"></span>
+                </button>
+            </form>
+            
+            <div class="status-bar">
+                <div class="status-dot"></div>
+                <span id="statusText">Système prêt</span>
+            </div>
+        </div>
     </div>
 
     <script src="/static/js/script.js"></script>
