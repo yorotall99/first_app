@@ -1,1 +1,6 @@
 .venv
+# Python cache et dossiers temporaires
+__pycache__/
+*.pyc
+uploads/
+outputs/
