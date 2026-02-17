@@ -2,39 +2,59 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>API Data Processing</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <title>Nexus Cleaner | Data Engine</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="background-mesh"></div>
-    <div class="container">
-        <div class="card">
-            <header>
-                <div class="icon-glow">⚡</div>
-                <h2>API <span class="highlight">Data</span> Cleaner</h2>
-                <p>Normalisation & IA Processing</p>
-            </header>
+    <div class="card" id="mainCard">
+        <div id="uploadSection">
+            <h1 class="logo">NEXUS <span class="neon">CLEANER</span></h1>
+            <p class="subtitle">ENGINE: EXCEL • XML • JSON • CSV</p>
 
             <form id="uploadForm">
                 <div class="upload-area" id="dropZone">
-                    <div class="icon-upload">📁</div>
-                    <p>Glissez votre fichier ici ou <span class="browse-btn">parcourez</span></p>
-                    <input type="file" id="fileInput" name="file" hidden required>
-                    <div id="fileName" class="file-name"></div>
+                    <div class="icon-core">⚡</div>
+                    <p id="fileNameDisplay">INITIALISER LA SOURCE DE DONNÉES</p>
+                    <input type="file" id="fileInput" name="file" accept=".csv, .json, .xml, .xlsx, .xls" hidden required>
                 </div>
-
-                <button type="submit" id="submitBtn">
-                    <span class="btn-text">Initialiser le Nettoyage</span>
-                </button>
+                <button type="submit" class="btn-primary" id="submitBtn">PROCESS START</button>
             </form>
+        </div>
 
-            <div class="status-bar">
-                <div class="status-dot"></div>
-                <span id="statusText">Système prêt...</span>
+        <div id="resultsArea" style="display: none;">
+            <div class="status-badge">SYSTÈME OPTIMISÉ</div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="label">Lignes Finales</span>
+                    <div class="value neon-text" id="res-rows">0</div>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Doublons</span>
+                    <div class="value warning-text" id="res-dups">0</div>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Anomalies</span>
+                    <div class="value danger-text" id="res-outliers">0</div>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Colonnes</span>
+                    <div class="value" id="res-cols">0</div>
+                </div>
             </div>
+
+            <div class="data-table-wrapper">
+                <table class="impact-table">
+                    <tr><td>Volume Initial (Lignes)</td><td id="t-rows-prev"></td></tr>
+                    <tr><td>Cellules Nulles Corrigées</td><td id="t-nulls-prev"></td></tr>
+                </table>
+            </div>
+
+            <a id="downloadLink" class="btn-primary" style="text-decoration: none; display: block; text-align: center;">TÉLÉCHARGER LE RAPPORT</a>
+            <center><a href="/" class="reset-link">NOUVELLE ANALYSE</a></center>
         </div>
     </div>
-    <script src="/static/js/script.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

@@ -1,94 +1,48 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, jsonify, send_from_directory
 import pandas as pd
 import os
-import csv
 from utils.data_cleaning import clean_data
-from docx import Document
-import PyPDF2
 
 app = Flask(__name__)
+UPLOAD_FOLDER, OUTPUT_FOLDER = "uploads", "outputs"
+ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'csv', 'json', 'xml'}
 
-UPLOAD_FOLDER = "uploads"
-OUTPUT_FOLDER = "outputs"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+for folder in [UPLOAD_FOLDER, OUTPUT_FOLDER]:
+    os.makedirs(folder, exist_ok=True)
 
+def load_any_file(filepath, filename):
+    ext = filename.lower().split('.')[-1]
+    if ext in ['xlsx', 'xls']: return pd.read_excel(filepath)
+    if ext == 'json': return pd.read_json(filepath)
+    if ext == 'xml': return pd.read_xml(filepath)
+    return pd.read_csv(filepath, sep=None, engine='python', encoding='utf-8')
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
-
 @app.route("/upload", methods=["POST"])
 def upload_file():
-    if 'file' not in request.files:
-        return "Erreur : Aucun fichier", 400
-
-    file = request.files["file"]
-    if file.filename == '':
-        return "Erreur : Nom vide", 400
+    file = request.files.get("file")
+    if not file: return jsonify({"error": "Aucun fichier"}), 400
 
     filepath = os.path.join(UPLOAD_FOLDER, file.filename)
     file.save(filepath)
 
     try:
-        print(f"--- Analyse du fichier : {file.filename} ---")
+        df = load_any_file(filepath, file.filename)
+        cleaned_df, stats = clean_data(df)
 
-        # DETECTION DU FORMAT
-        if file.filename.endswith(('.xlsx', '.xls')):
-            print("Format Excel détecté.")
-            df = pd.read_excel(filepath)
-        elif file.filename.endswith('.csv'):
-            print("Format CSV détecté.")
-            try:
-                df = pd.read_csv(filepath, sep=None, engine='python', encoding='utf-8')
-            except:
-                df = pd.read_csv(filepath, sep=None, engine='python', encoding='latin-1', quoting=csv.QUOTE_NONE)
-        elif file.filename.endswith('.docx'):
-            print("Format Word détecté.")
-            doc = Document(filepath)
-            data = [p.text for p in doc.paragraphs if p.text.strip() != ""]
-            df = pd.DataFrame(data, columns=["Texte"])
-        elif file.filename.endswith('.pdf'):
-            print("Format PDF détecté.")
-            pdf_file = open(filepath, 'rb')
-            reader = PyPDF2.PdfReader(pdf_file)
-            data = []
-            for page in reader.pages:
-                text = page.extract_text()
-                if text:
-                    lines = [line.strip() for line in text.split("\n") if line.strip()]
-                    data.extend(lines)
-            pdf_file.close()
-            df = pd.DataFrame(data, columns=["Texte"])
-        elif file.filename.endswith('.txt'):
-            print("Format TXT détecté.")
-            with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-                data = [line.strip() for line in f.readlines() if line.strip()]
-            df = pd.DataFrame(data, columns=["Texte"])
-        else:
-            print("Format non reconnu. On essaie de lire comme texte brut.")
-            with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-                data = [line.strip() for line in f.readlines() if line.strip()]
-            df = pd.DataFrame(data, columns=["Texte"])
+        output_name = f"nexus_cleaned_{file.filename.split('.')[0]}.csv"
+        cleaned_df.to_csv(os.path.join(OUTPUT_FOLDER, output_name), index=False)
 
-        print(f"Colonnes lues : {df.columns.tolist()}")
-
-        # NETTOYAGE
-        print("Démarrage du nettoyage...")
-        cleaned_df = clean_data(df)
-        print("Nettoyage réussi.")
-
-        # SAUVEGARDE
-        output_path = os.path.join(OUTPUT_FOLDER, "cleaned_data.csv")
-        cleaned_df.to_csv(output_path, index=False, encoding='utf-8')
-
-        return send_file(output_path, as_attachment=True)
-
+        return jsonify({"status": "success", "stats": stats, "filename": output_name})
     except Exception as e:
-        print(f"!!! ERREUR SERVEUR : {str(e)}")
-        return f"Erreur lors du traitement : {str(e)}", 500
+        return jsonify({"error": str(e)}), 500
 
+@app.route("/download/<filename>")
+def download_file(filename):
+    return send_from_directory(OUTPUT_FOLDER, filename, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(debug=True)
