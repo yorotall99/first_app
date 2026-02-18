@@ -2,24 +2,30 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nexus Cleaner | Data Engine</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='image.jpg') }}">
 </head>
 <body>
-    <div class="card" id="mainCard">
-        <div id="uploadSection">
-            <h1 class="logo">NEXUS <span class="neon">CLEANER</span></h1>
+
+    <div class="card">
+        <div id="uploadArea">
+            <div class="header-container">
+                <img src="{{ url_for('static', filename='image.jpg') }}" alt="Nexus Logo" class="logo-nexus">
+                <h1 class="logo">NEXUS <span class="neon">CLEANER</span></h1>
+            </div>
+
             <p class="subtitle">ENGINE: EXCEL • XML • JSON • CSV</p>
 
-            <form id="uploadForm">
-                <div class="upload-area" id="dropZone">
-                    <div class="icon-core">⚡</div>
-                    <p id="fileNameDisplay">INITIALISER LA SOURCE DE DONNÉES</p>
-                    <input type="file" id="fileInput" name="file" accept=".csv, .json, .xml, .xlsx, .xls" hidden required>
-                </div>
-                <button type="submit" class="btn-primary" id="submitBtn">PROCESS START</button>
-            </form>
+            <div class="upload-area" id="drop-zone">
+                <div class="icon-upload" style="font-size: 2rem; margin-bottom: 10px;">⚡</div>
+                <p>INITIALISER LA SOURCE DE DONNÉES</p>
+                <input type="file" id="file-input" hidden accept=".csv, .xlsx, .json, .xml">
+            </div>
+
+            <button id="process-btn" class="btn-primary">PROCESS START</button>
         </div>
 
         <div id="resultsArea" style="display: none;">
@@ -46,15 +52,21 @@
 
             <div class="data-table-wrapper">
                 <table class="impact-table">
-                    <tr><td>Volume Initial (Lignes)</td><td id="t-rows-prev"></td></tr>
-                    <tr><td>Cellules Nulles Corrigées</td><td id="t-nulls-prev"></td></tr>
+                    <tr><td>Volume Initial (Lignes)</td><td id="t-rows-prev">-</td></tr>
+                    <tr><td>Cellules Nulles Corrigées</td><td id="t-nulls-prev">-</td></tr>
                 </table>
             </div>
 
-            <a id="downloadLink" class="btn-primary" style="text-decoration: none; display: block; text-align: center;">TÉLÉCHARGER LE RAPPORT</a>
-            <center><a href="/" class="reset-link">NOUVELLE ANALYSE</a></center>
+            <a id="downloadLink" class="btn-primary" style="text-decoration: none; display: block; text-align: center; margin-top: 20px;">
+                TÉLÉCHARGER LE RAPPORT
+            </a>
+
+            <center>
+                <a href="/" class="reset-link">⚡ EFFECTUER UNE NOUVELLE ANALYSE</a>
+            </center>
         </div>
     </div>
+
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
