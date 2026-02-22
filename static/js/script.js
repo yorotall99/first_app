@@ -1,71 +1,70 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // Sélection des nouveaux IDs du HTML
-    const dropZone = document.getElementById("drop-zone");
-    const fileInput = document.getElementById("file-input");
-    const processBtn = document.getElementById("process-btn");
-    const uploadArea = document.getElementById("uploadArea");
-    const resultsArea = document.getElementById("resultsArea");
+    const fileInput = document.getElementById('file-input');
+    const processBtn = document.getElementById('process-btn');
+    const dropZone = document.getElementById('drop-zone');
+    const historyBtn = document.getElementById('viewHistoryBtn');
+    const historyList = document.getElementById('historyList');
 
-    // Déclenche l'explorateur de fichiers au clic sur la zone
-    dropZone.addEventListener("click", () => fileInput.click());
+    dropZone.onclick = () => fileInput.click();
 
-    // Affichage du nom du fichier sélectionné
-    fileInput.addEventListener("change", () => {
-        if (fileInput.files.length) {
-            const fileName = fileInput.files[0].name.toUpperCase();
-            // On met à jour le texte dans la zone d'upload pour confirmer la sélection
-            dropZone.querySelector("p").textContent = `FICHIER PRÊT : ${fileName}`;
-            dropZone.querySelector("p").style.color = "var(--neon)";
-            dropZone.style.borderColor = "var(--neon)";
-        }
-    });
+    processBtn.onclick = async () => {
+        if (!fileInput.files[0]) return alert("SÉLECTIONNEZ UN FICHIER");
 
-    // Gestion de l'envoi du fichier (Action du bouton PROCESS START)
-    processBtn.addEventListener("click", function(e) {
-        if (!fileInput.files.length) {
-            alert("Veuillez d'abord sélectionner un fichier.");
-            return;
-        }
+        // Animation Barre
+        const progContainer = document.getElementById('progressContainer');
+        const progBar = document.getElementById('progressBar');
+        progContainer.style.display = "block";
+        processBtn.style.display = "none";
+
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 15;
+            if (progress <= 90) progBar.style.width = progress + "%";
+        }, 200);
 
         const formData = new FormData();
-        formData.append("file", fileInput.files[0]);
+        formData.append('file', fileInput.files[0]);
 
-        // Changement d'état du bouton
-        processBtn.textContent = "PROCESSING CORE...";
-        processBtn.classList.add("loading");
+        try {
+            const response = await fetch('/upload', { method: 'POST', body: formData });
+            if (!response.ok) throw new Error();
 
-        fetch("/upload", {
-            method: "POST",
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.status === "success") {
-                // Bascule de l'interface : Accueil -> Dashboard
-                uploadArea.style.display = "none";
-                resultsArea.style.display = "block";
+            progBar.style.width = "100%";
+            clearInterval(interval);
 
-                // Mise à jour des statistiques du moteur Pandas
-                document.getElementById("res-rows").textContent = data.stats.rows_after;
-                document.getElementById("res-dups").textContent = `-${data.stats.duplicates_removed}`;
-                document.getElementById("res-outliers").textContent = data.stats.outliers_found;
-                document.getElementById("res-cols").textContent = data.stats.cols_after;
+            // Update Stats
+            document.getElementById('res-rows').textContent = response.headers.get("X-Stats-Rows");
+            document.getElementById('res-dups').textContent = response.headers.get("X-Stats-Dups");
+            document.getElementById('res-outliers').textContent = response.headers.get("X-Stats-Outliers");
+            document.getElementById('res-cols').textContent = response.headers.get("X-Stats-Cols");
 
-                document.getElementById("t-rows-prev").textContent = data.stats.rows_before;
-                document.getElementById("t-nulls-prev").textContent = data.stats.nulls_before;
+            // File Link
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const dl = document.getElementById('downloadLink');
+            dl.href = url;
+            dl.download = "NEXUS_CLEANED.xlsx";
 
-                // Configuration du lien de téléchargement
-                document.getElementById("downloadLink").href = `/download/${data.filename}`;
-            } else {
-                alert("Erreur lors du traitement : " + (data.message || "Fichier invalide"));
-                processBtn.textContent = "PROCESS START";
-                processBtn.classList.remove("loading");
-            }
-        })
-        .catch(err => {
-            console.error("Erreur Fetch:", err);
-            alert("Erreur de connexion au serveur.");
-            processBtn.textContent = "PROCESS START";
-        });
-    });
+            setTimeout(() => {
+                document.getElementById('uploadArea').style.display = "none";
+                document.getElementById('resultsArea').style.display = "block";
+            }, 500);
+
+        } catch (e) {
+            alert("ERREUR MOTEUR");
+            location.reload();
+        }
+    };
+
+    historyBtn.onclick = async () => {
+        const res = await fetch('/history');
+        const data = await res.json();
+        historyList.innerHTML = data.history.map(item => `
+            <div style="padding:8px; border-bottom:1px solid #00f2ff11; font-size:0.75rem; color:#fff;">
+                <b style="color:#00f2ff">${item.filename}</b> (${item.date})<br>
+                Lignes: ${item.rows_in} → ${item.rows_out} | Erreurs: ${item.outliers}
+            </div>
+        `).join('');
+        document.getElementById('historySection').style.display = "block";
+    };
 });

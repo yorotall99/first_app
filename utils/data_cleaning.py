@@ -3,40 +3,35 @@ import numpy as np
 
 
 def clean_data(df):
-    # Capture des stats initiales
     stats = {
-        "rows_before": len(df),
-        "cols_before": len(df.columns),
-        "nulls_before": int(df.isnull().sum().sum()),
+        'prev_rows': len(df),
+        'cols': len(df.columns),
+        'nulls': int(df.isna().sum().sum()),
+        'dups': int(df.duplicated().sum()),
+        'outliers': 0
     }
 
-    df = df.copy()
-    initial_len = len(df)
+    # 1. Suppression des doublons
+    df = df.drop_duplicates().copy()
 
     for col in df.columns:
-        # Nettoyage texte : suppression des espaces blancs
-        if df[col].dtype == 'object':
-            df[col] = df[col].astype(str).str.strip()
+        col_upper = col.upper()
 
-        # Nettoyage numérique intelligent (Détection > 60%)
-        cleaned_col = df[col].astype(str).str.replace(r'[^\d.,-]', '', regex=True).str.replace(',', '.', regex=False)
-        numeric = pd.to_numeric(cleaned_col, errors='coerce')
+        # --- STRUCTURE DES IDENTIFIANTS (PID, ST_NUM) ---
+        if any(x in col_upper for x in ["PID", "NUM"]):
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+            df[col] = df[col].astype(np.int64)  # Force l'entier (plus de .0)
 
-        if numeric.notna().mean() > 0.6:
-            df[col] = numeric.fillna(numeric.median() if numeric.notna().any() else 0)
+        # --- STRUCTURE DES COMPTAGES ET SURFACES ---
+        elif any(x in col_upper for x in ["BED", "BATH", "SQ", "FT"]):
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            median_val = df[col].median() if not df[col].isna().all() else 0
+            df[col] = df[col].fillna(round(median_val)).astype(np.int64)
+
+        # --- STRUCTURE DU TEXTE ---
         else:
-            df[col] = df[col].replace(['nan', 'None', ''], np.nan).fillna("Inconnu")
+            df[col] = df[col].astype(str).str.strip()
+            df[col] = df[col].replace(['nan', 'None', '', '12', '--'], "Inconnu")
 
-    # Suppression des doublons
-    df = df.drop_duplicates()
-
-    # Stats finales
-    stats.update({
-        "rows_after": len(df),
-        "cols_after": len(df.columns),
-        "nulls_after": 0,
-        "duplicates_removed": initial_len - len(df),
-        "outliers_found": np.random.randint(5, 25)  # Simulation ou calcul réel
-    })
-
+    stats['rows'] = len(df)
     return df, stats

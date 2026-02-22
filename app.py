@@ -1,48 +1,89 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, send_file, jsonify
 import pandas as pd
 import os
+import sqlite3
+from datetime import datetime
 from utils.data_cleaning import clean_data
 
 app = Flask(__name__)
-UPLOAD_FOLDER, OUTPUT_FOLDER = "uploads", "outputs"
-ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'csv', 'json', 'xml'}
 
-for folder in [UPLOAD_FOLDER, OUTPUT_FOLDER]:
-    os.makedirs(folder, exist_ok=True)
 
-def load_any_file(filepath, filename):
-    ext = filename.lower().split('.')[-1]
-    if ext in ['xlsx', 'xls']: return pd.read_excel(filepath)
-    if ext == 'json': return pd.read_json(filepath)
-    if ext == 'xml': return pd.read_xml(filepath)
-    return pd.read_csv(filepath, sep=None, engine='python', encoding='utf-8')
+# Initialisation de la base de données pour l'historique
+def init_db():
+    conn = sqlite3.connect('history.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS history
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  filename TEXT,
+                  date TEXT,
+                  rows_in INTEGER,
+                  rows_out INTEGER,
+                  dups INTEGER,
+                  outliers INTEGER)''')
+    conn.commit()
+    conn.close()
+
+
+init_db()
+
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
+
 @app.route("/upload", methods=["POST"])
 def upload_file():
     file = request.files.get("file")
-    if not file: return jsonify({"error": "Aucun fichier"}), 400
+    if not file: return "Source vide", 400
 
-    filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-    file.save(filepath)
+    # Lecture universelle (Excel ou CSV)
+    if file.filename.endswith(('.xlsx', '.xls')):
+        df = pd.read_excel(file)
+    else:
+        df = pd.read_csv(file)
 
-    try:
-        df = load_any_file(filepath, file.filename)
-        cleaned_df, stats = clean_data(df)
+    # Nettoyage structuré (utilise Numpy via utils/data_cleaning.py)
+    cleaned_df, stats = clean_data(df)
 
-        output_name = f"nexus_cleaned_{file.filename.split('.')[0]}.csv"
-        cleaned_df.to_csv(os.path.join(OUTPUT_FOLDER, output_name), index=False)
+    # SAUVEGARDE DANS L'HISTORIQUE (SQLite)
+    conn = sqlite3.connect('history.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO history (filename, date, rows_in, rows_out, dups, outliers) VALUES (?, ?, ?, ?, ?, ?)",
+              (file.filename, datetime.now().strftime("%d/%m/%Y %H:%M"),
+               stats['prev_rows'], stats['rows'], stats['dups'], stats['outliers']))
+    conn.commit()
+    conn.close()
 
-        return jsonify({"status": "success", "stats": stats, "filename": output_name})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # GÉNÉRATION DU FICHIER EXCEL (.xlsx)
+    output_path = "outputs/NEXUS_CLEANED_FINAL.xlsx"
+    os.makedirs("outputs", exist_ok=True)
+    cleaned_df.to_excel(output_path, index=False, engine='openpyxl')
 
-@app.route("/download/<filename>")
-def download_file(filename):
-    return send_from_directory(OUTPUT_FOLDER, filename, as_attachment=True)
+    response = send_file(output_path, as_attachment=True)
+
+    # Headers pour le Dashboard JavaScript
+    response.headers["X-Stats-Rows"] = str(stats['rows'])
+    response.headers["X-Stats-Prev-Rows"] = str(stats['prev_rows'])
+    response.headers["X-Stats-Cols"] = str(stats['cols'])
+    response.headers["X-Stats-Dups"] = str(stats['dups'])
+    response.headers["X-Stats-Nulls"] = str(stats['nulls'])
+    response.headers["X-Stats-Outliers"] = str(stats['outliers'])
+    response.headers["Access-Control-Expose-Headers"] = "*"
+
+    return response
+
+
+@app.route("/history")
+def get_history():
+    conn = sqlite3.connect('history.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM history ORDER BY id DESC LIMIT 10")
+    rows = cursor.fetchall()
+    conn.close()
+    return jsonify({"history": [dict(r) for r in rows]})
+
 
 if __name__ == "__main__":
     app.run(debug=True)
