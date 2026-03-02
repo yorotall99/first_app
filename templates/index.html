@@ -4,49 +4,112 @@
     <meta charset="UTF-8">
     <title>Nexus Cleaner | Data Engine</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script><script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-    <div class="card">
-        <div id="uploadArea">
-            <h1 class="logo">NEXUS <span class="neon">CLEANER</span></h1>
+    <nav class="sidebar">
+        <h1 class="logo">NEXUS <span class="neon">CLEANER</span></h1>
+        <ul class="nav-menu">
+            <li class="nav-item active" onclick="showTab('engine-tab')">🚀 MOTEUR</li>
+            <li class="nav-item" onclick="showTab('history-tab')">📊 ARCHIVES</li>
+            <li class="nav-item" onclick="showTab('docs-tab')">📚 DOCUMENTATION</li>
+        </ul>
+    </nav>
 
-            <div class="upload-area" id="drop-zone">
-                <p>CLIQUEZ POUR INITIALISER LA SOURCE</p>
-                <input type="file" id="file-input" hidden accept=".csv, .xlsx, .xls">
-            </div>
-
-            <div id="progressContainer" style="display: none; margin-top: 20px;">
-                <div style="width: 100%; background: #1a1a1a; height: 8px; border-radius: 4px;">
-                    <div id="progressBar" style="width: 0%; background: #00f2ff; height: 100%; transition: 0.3s; box-shadow: 0 0 10px #00f2ff;"></div>
+    <main class="main-content">
+        <section id="engine-tab" class="tab-content active">
+            <div class="dashboard-grid">
+                <div class="card config-panel">
+                    <h3>⚙️ RÉGLAGES</h3>
+                    <div class="field">
+                        <label>Imputation</label>
+                        <select id="impute-method">
+                            <option value="median">Médiane</option>
+                            <option value="mean">Moyenne</option>
+                            <option value="zero">Zéro</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Outliers (IQR) : <span id="iqr-val" class="neon">1.5</span>x</label>
+                        <input type="range" id="iqr-threshold" min="1.5" max="3.0" step="0.5" value="1.5">
+                    </div>
+                    <div class="field">
+                        <label><input type="checkbox" id="force-int" checked> Forcer Entiers</label>
+                    </div>
                 </div>
-                <p id="progText" style="color: #00f2ff; font-size: 0.7rem; text-align: center; margin-top: 5px;">TRAITEMENT...</p>
+
+                <div class="card">
+                    <div id="uploadArea">
+                        <div class="drop-zone" id="drop-zone">CLIQUEZ POUR PARCOURIR</div>
+                        <input type="file" id="file-input" hidden>
+                        <button id="process-btn" class="btn-primary">START PROCESS</button>
+                    </div>
+
+                    <div id="resultsArea" style="display:none;">
+                        <div class="stats-row">
+                            <div class="stat">Lignes: <span id="res-rows">0</span></div>
+                            <div class="stat">Outliers: <span id="res-outliers">0</span></div>
+                        </div>
+                        <div class="preview-container">
+                            <table id="previewTable">
+                                <thead id="thead"></thead>
+                                <tbody id="tbody"></tbody>
+                            </table>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <a href="/download" class="btn-primary" style="text-decoration:none">TELECHARCGER</a>
+                            <button onclick="location.reload()" class="btn-sec">NOUVELLE ANALYSE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="history-tab" class="tab-content">
+            <div class="card"><h3>JOURNAL SQLITE</h3><div id="historyList"></div></div>
+        </section>
+
+        <section id="docs-tab" class="tab-content">
+    <div class="card doc-container">
+        <h2 class="neon">ARCHITECTURE ET LOGIQUE MATHÉMATIQUE</h2>
+
+        <div class="doc-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 20px;">
+
+            <div class="doc-card-inner">
+                <h4 class="neon">1. Détection des Anomalies (IQR)</h4>
+                <p>Le moteur utilise la méthode de <b>Tukey</b> basée sur l'Écart Interquartile (Interquartile Range - IQR).</p>
+                <div class="formula">
+                    $$IQR = Q_3 - Q_1$$
+                    $$Bornes = [Q_1 - k \cdot IQR, Q_3 + k \cdot IQR]$$
+                </div>
+                <p><small>Où $k$ est le seuil de sensibilité réglable (par défaut 1.5). Cette méthode est plus robuste que le Z-Score car elle n'est pas influencée par les valeurs extrêmes elles-mêmes.</small></p>
             </div>
 
-            <button id="process-btn" class="btn-primary">PROCESS START</button>
-
-            <button id="viewHistoryBtn" style="background:none; border:1px solid #00f2ff33; color:#00f2ff; margin-top:20px; cursor:pointer; padding:10px; width:100%; font-family:'Rajdhani';">
-                ACCÉDER AUX ARCHIVES
-            </button>
-        </div>
-
-        <div id="resultsArea" style="display: none;">
-            <div class="stats-grid">
-                <div class="stat-card"><span>Lignes Finales</span><div id="res-rows" class="value">0</div></div>
-                <div class="stat-card"><span>Doublons</span><div id="res-dups" class="value">0</div></div>
-                <div class="stat-card"><span>Anomalies</span><div id="res-outliers" class="value">0</div></div>
-                <div class="stat-card"><span>Colonnes</span><div id="res-cols" class="value">0</div></div>
+            <div class="doc-card-inner">
+                <h4 class="neon">2. Stratégies d'Imputation (NaN)</h4>
+                <p>Le traitement des données manquantes suit trois logiques au choix :</p>
+                <ul>
+                    <li><b>Médiane :</b> Utilisée pour les distributions asymétriques (ex: prix immobiliers).</li>
+                    <li><b>Moyenne :</b> Adaptée aux distributions gaussiennes.</li>
+                    <li><b>Zéro-Fill :</b> Pour les variables de comptage optionnelles.</li>
+                </ul>
             </div>
 
-            <a id="downloadLink" class="btn-primary" style="display: block; text-align: center; text-decoration: none; margin-top: 20px;">TÉLÉCHARGER EXCEL</a>
-            <center><a href="/" style="color: #00f2ff; font-size: 0.8rem; text-decoration: none; margin-top: 15px; display: inline-block;">NOUVELLE ANALYSE</a></center>
-        </div>
+            <div class="doc-card-inner">
+                <h4 class="neon">3. Pipeline ETL Vectorisé</h4>
+                <p>Pour garantir la rapidité, le nettoyage n'utilise pas de boucles Python classiques mais la <b>vectorisation NumPy/Pandas</b>.</p>
+                <p><small>Complexité temporelle : $O(n \cdot m)$ où $n$ est le nombre de lignes et $m$ le nombre de colonnes.</small></p>
+            </div>
 
-        <div id="historySection" style="display:none; margin-top:20px; border-top: 1px solid #00f2ff33; padding-top: 20px;">
-            <h3 style="color:#00f2ff; font-size: 0.9rem;">HISTORIQUE RÉCENT</h3>
-            <div id="historyList"></div>
+            <div class="doc-card-inner">
+                <h4 class="neon">4. Persistance des Données</h4>
+                <p>Chaque session est archivée dans une base de données <b>SQLite3</b>. Cela permet une traçabilité complète des opérations de nettoyage effectuées sur les datasets.</p>
+            </div>
         </div>
     </div>
+</section>
+    </main>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
